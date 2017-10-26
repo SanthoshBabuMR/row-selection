@@ -287,9 +287,9 @@ function doesCurrentRowSelectionLieWithInPastElectedRow (argsJson, currentRow) {
     var pIndex = __WEBPACK_IMPORTED_MODULE_0_jquery___default()(state.pastRowElected).index();
     var cIndex = currentRow.index();
     if (currentSelectionDirection === config.directions.top) {
-        return pIndex <= cIndex
+        return pIndex < cIndex
     } else if (currentSelectionDirection === config.directions.bottom) {
-        return cIndex <= pIndex;
+        return cIndex < pIndex;
     }
 }
 
