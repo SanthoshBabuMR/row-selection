@@ -57,7 +57,7 @@ $('.acts-table').uiSelectableRow({
 |selectRowIfTargetIs|array|Array of CSS selector, which if matches will select the row; selectRowIfTargetIs takes priority over selectRowIfTargetIsNot.|```[]```|optional|
 |selectRowIfTargetIsNot|array|Array of CSS selector, which if matched will not select the row.|```[]```|optional|
 |toggleOnShiftClick|boolean|toggle selection on shift click|```false```|optional|
-|filterSelection|function|callback to filter selected rows||optional|
+|filterSelection|function|callback to filter selected rows; doesn't filter, if `toggleOnShiftClick` is `true`||optional|
 |eventNs|string|event namespace|```uiSelectableRow```|optional|
 |eventType.toggleSelection|string|name for custom event type, 'toggleSelection'|```toggle-selection```|optional|
 |eventType.enable|string|name for custom event type, 'enable'|```enable```|optional|

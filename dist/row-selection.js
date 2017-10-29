@@ -214,7 +214,7 @@ function update (argsJson, newState, newUi) {
 
 function filterSelection (argsJson, rows) {
     var config = argsJson.config;
-    if (typeof config.filterSelection === 'function') {
+    if (!config.toggleOnShiftClick && typeof config.filterSelection === 'function') {
         if (rows && rows.length) {
             return rows.filter(function (index, row) {
                 return config.filterSelection(index, row);

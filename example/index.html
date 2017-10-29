@@ -124,20 +124,24 @@
     <script type="text/javascript">
         $(function () {
             $('.volunteering-days').uiSelectableRow({
-                rowIdentifier: '.list-group-item'
+                rowIdentifier: '.list-group-item',
+                filterSelection: function (index, row) {
+                    var selection = true;
+                    // un-comment below lines to select only even rows
+                    // selection = $(row).index() % 2 === 0;
+                    return selection;
+                },
             });
 
             $('.tabular-data').uiSelectableRow({
-                selectRowIfTargetIs: ['td'],
+                rowIdentifier: 'tbody tr',
                 selectedRowClass: 'the-choosen-one',
-                filterSelection: function (e, row) {
-                    // select only even rows
-                    // if ( $(row).index() % 2 === 0 ) {
-                        return row;
-                    // }
-                },
+                toggleOnShiftClick: true
             }).on('toggle-selection', function (event, selectedRows, deSelectedRows, allSelectedRows) {
-                allSelectedRows.find('input').prop('checked', true);
+                console.log('selectedRows', selectedRows);
+                console.log('deSelectedRows', deSelectedRows);
+                // Handle selected and de-selected rows
+                selectedRows.find('input').prop('checked', true);
                 deSelectedRows.find('input').prop('checked', false);
             });
         });
