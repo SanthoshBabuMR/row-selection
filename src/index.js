@@ -38,13 +38,13 @@ var defaults = {
         selectableRow: 'data-ui-selectable-row',
         shiftSelectable: 'data-shift-selectable',
         ctrlSelectable: 'data-ctrl-selectable',
-        toggleOnShiftClick: 'data-toggle-on-shift-click',
+        toggleOnClick: 'data-toggle-on-click',
         selectedRowClass: 'data-selected-class'
     },
     isDisabled: false,
     isShiftSelectable: true,
     isCtrlSelectable: true,
-    toggleOnShiftClick: false,
+    toggleOnClick: false,
     selectedRowClass: 'ui-selectable-row-selected',
     containerHoverClass: 'ui-selectable-row-hover',
     disableTextSelectionClass : 'ui-selectable-row-disable-text-selection',
@@ -68,7 +68,7 @@ function dataAttributeBasedConfig (config, containerEl) {
     isDisabled: containerEl.attr(attr.disabled),
     isShiftSelectable: containerEl.attr(attr.shiftSelectable),
     isCtrlSelectable: containerEl.attr(attr.ctrlSelectable),
-    toggleOnShiftClick: containerEl.attr(attr.toggleOnShiftClick),
+    toggleOnClick: containerEl.attr(attr.toggleOnClick),
     selectedRowClass: containerEl.attr(attr.selectedRowClass)
   };
 }
@@ -141,7 +141,7 @@ function update (argsJson, newState, newUi) {
 
 function filterSelection (argsJson, rows) {
     var config = argsJson.config;
-    if (!config.toggleOnShiftClick && typeof config.filterSelection === 'function') {
+    if (typeof config.filterSelection === 'function') {
         if (rows && rows.length) {
             return rows.filter(function (index, row) {
                 return config.filterSelection(index, row);
@@ -219,12 +219,12 @@ function getRecentRowElectedUpToCurrentRow (argsJson, currentRow) {
         rows = currentRow;
     } else if (currentSelectionDirection === config.directions.top) {
         rows = rows.add(state.recentRowElected).add($(state.recentRowElected).prevUntil(currentRow.get(0)));
-        if (config.toggleOnShiftClick) {
+        if (config.toggleOnClick) {
             rows = rows.add(currentRow.get(0))
         }
     } else if (currentSelectionDirection === config.directions.bottom) {
         rows = rows.add(state.recentRowElected).add(currentRow.prevUntil(state.recentRowElected));
-        if (config.toggleOnShiftClick) {
+        if (config.toggleOnClick) {
             rows = rows.add(currentRow.get(0))
         }
     }
@@ -246,12 +246,13 @@ function manageClick (e, argsJson, currentRow ) {
     var config = argsJson.config;
     var state = argsJson.state;
     var containerEl = argsJson.containerEl;
+    debugger;
     if (config.isDisabled || !isTargetClickable(e, argsJson)) {
         return;
     }
     var modifierKey = e.shiftKey ? config.modifierKey.shift : (e.metaKey || e.ctrlKey ? config.modifierKey.ctrl : null);
 
-    currentRow = filterSelection(argsJson, currentRow);
+    currentRow = config.toggleOnClick === false ? filterSelection(argsJson, currentRow) : currentRow;
 
     if (!(currentRow && currentRow.length)) {
         return;
@@ -320,8 +321,15 @@ function click (argsJson, currentRow) {
     var newState;
     var newUi = {};
     var isMultipleRowsSelected = getSelectedRows(argsJson).length > 1;
+    var isCurrentRowSelected = isRowSelected(argsJson, currentRow);
 
-    if (!isMultipleRowsSelected && isRowSelected(argsJson, currentRow)) {
+    if (config.toggleOnClick) {
+        if (isCurrentRowSelected) {
+            newUi.rowsToDeselect = currentRow;
+        } else {
+            newUi.rowsToSelect = currentRow;
+        }
+    } else if (!isMultipleRowsSelected && isCurrentRowSelected) {
         newUi.rowsToDeselect = currentRow;
     } else {
         newUi.rowsToSelect = currentRow;
@@ -338,8 +346,9 @@ function ctrlClick (argsJson, currentRow) {
     var containerEl = argsJson.containerEl;
     var newState;
     var newUi = {};
+    var isCurrentRowSelected = isRowSelected(argsJson, currentRow);
 
-    if (currentRow.hasClass(config.selectedRowClass)) {
+    if (isCurrentRowSelected) {
         newUi.rowsToDeselect = currentRow;
     } else {
         newUi.rowsToSelect = currentRow;
@@ -365,11 +374,12 @@ function shiftClick (argsJson, currentRow) {
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
     var isCurrentRowTheRecentElectedRow = state.recentRowElected === currentRow.get(0);
 
-    if (!config.toggleOnShiftClick && isCurrentRowTheRecentElectedRow) {
+    if (!config.toggleOnClick && isCurrentRowTheRecentElectedRow) {
         return;
     }
 
-    rowGroup = filterSelection(argsJson, createRowGroup (argsJson, $(state.recentRowElected), currentRow));
+    rowGroup = createRowGroup (argsJson, $(state.recentRowElected), currentRow);
+    rowGroup = config.toggleOnClick === false ? filterSelection(argsJson, rowGroup) : rowGroup;
 
     if (!(rowGroup && rowGroup.length)) {
         return;
@@ -385,6 +395,7 @@ function shiftClick (argsJson, currentRow) {
     } else {
         if(action === config.selectionType.select) {
             newUi.rowsToSelect = rowGroup.filter(':not(".' + config.selectedRowClass + '")');
+            newUi.rowsToSelect = config.toggleOnClick === false ? newUi.rowsToSelect : newUi.rowsToSelect.add(currentRow);
         } else if(action === config.selectionType.deselect) {
             newUi.rowsToDeselect = getRecentRowElectedUpToCurrentRow(argsJson, currentRow);
         }

@@ -56,8 +56,8 @@ $('.acts-table').uiSelectableRow({
 |rowIdentifier|string|CSS selector targeting the row. In case of table, it's usually 'tr', in case of list, it usually 'li'. This is element to which the 'selected' row class is attached to|```tbody tr```|yes|
 |selectRowIfTargetIs|array|Array of CSS selector, which if matches will select the row; selectRowIfTargetIs takes priority over selectRowIfTargetIsNot.|```[]```|optional|
 |selectRowIfTargetIsNot|array|Array of CSS selector, which if matched will not select the row.|```[]```|optional|
-|toggleOnShiftClick|boolean|toggle selection on shift click|```false```|optional|
-|filterSelection|function|callback to filter selected rows; doesn't filter, if `toggleOnShiftClick` is `true`||optional|
+|toggleOnClick|boolean|toggle selection on shift click|```false```|optional|
+|filterSelection|function|callback to filter selected rows; doesn't filter, if `toggleOnClick` is `true`||optional|
 |eventNs|string|event namespace|```uiSelectableRow```|optional|
 |eventType.toggleSelection|string|name for custom event type, 'toggleSelection'|```toggle-selection```|optional|
 |eventType.enable|string|name for custom event type, 'enable'|```enable```|optional|

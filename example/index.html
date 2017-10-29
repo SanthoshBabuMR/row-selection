@@ -136,7 +136,7 @@
             $('.tabular-data').uiSelectableRow({
                 rowIdentifier: 'tbody tr',
                 selectedRowClass: 'the-choosen-one',
-                toggleOnShiftClick: true
+                toggleOnClick: true
             }).on('toggle-selection', function (event, selectedRows, deSelectedRows, allSelectedRows) {
                 console.log('selectedRows', selectedRows);
                 console.log('deSelectedRows', deSelectedRows);
