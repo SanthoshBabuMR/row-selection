@@ -1,5 +1,21 @@
 import $ from 'jquery';
 
+var constants = {
+    modifierKey: {
+        shift: 'shift',
+        ctrl: 'ctrl'
+    },
+    directions: {
+        top: 'TOP',
+        bottom: 'BOTTOM'
+    },
+    selectionType: {
+        select: 'select',
+        deselect: 'deselect',
+        toggle: 'toggle'
+    }
+};
+
 var defaults = {
     rowIdentifier: 'tbody tr',
     selectRowIfTargetIs: [],
@@ -29,14 +45,6 @@ var defaults = {
     selectedRowClass: 'ui-selectable-row-selected',
     containerHoverClass: 'ui-selectable-row-hover',
     disableTextSelectionClass : 'ui-selectable-row-disable-text-selection',
-    modifierKey: {
-        shift: 'shift',
-        ctrl: 'ctrl'
-    },
-    directions: {
-        top: 'TOP',
-        bottom: 'BOTTOM'
-    }
 };
 
 function guid() {
@@ -76,7 +84,7 @@ function formatConfig (config) {
 }
 
 function configure (option, containerEl) {
-    var mashedConfig = $.extend( {}, defaults, option);
+    var mashedConfig = $.extend( {}, defaults, option, constants);
     var mashedConfig = $.extend( mashedConfig, dataAttributeBasedConfig(mashedConfig, containerEl))
     var mashedConfig = $.extend( mashedConfig, formatConfig(mashedConfig));
     return mashedConfig;
@@ -100,6 +108,8 @@ function updateUi (argsJson, newUi) {
 }
 
 function update (argsJson, newState, newUi) {
+    // console.log(newState);
+    // console.log(newUi);
     var containerEl = argsJson.containerEl;
     var config = argsJson.config;
     updateState(argsJson, newState);
@@ -108,7 +118,7 @@ function update (argsJson, newState, newUi) {
                         [ $(newUi.rowsToSelect), $(newUi.rowsToDeselect), getSelectedRows(argsJson) ]);
 }
 
-function computeState (argsJson, currentRow, modifierKey) {
+function computeState (argsJson, currentRow, modifierKey, customState) {
     var config = argsJson.config;
     var state = argsJson.state;
     var newState = {};
@@ -116,21 +126,13 @@ function computeState (argsJson, currentRow, modifierKey) {
     var cIndex = currentRow.index();
     newState.recentRowElected = currentRow.get(0);
     newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
-    if (state.pastRowElected) {
-        if (modifierKey === state.recentModifierKey) {
-            newState.pastRowElected = state.pastRowElected;
-        } else {
-            newState.pastRowElected = state.recentRowElected;
-        }
-    } else {
-        newState.pastRowElected = currentRow.get(0);
-    }
+    newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
     if (state.recentRowElected) {
         newState.recentDirection = rIndex > cIndex ? config.directions.top : config.directions.bottom;
         newState.pastDirection = state.recentDirection ? state.recentDirection : newState.recentDirection;
     }
     newState.recentModifierKey = modifierKey;
-    return newState;
+    return customState ? $.extend(newState, customState) : newState;
 }
 
 function filterSelection (argsJson, rows) {
@@ -175,7 +177,6 @@ function splitRowGroupByPastRowElected (argsJson, currentRow, rowGroup) {
     var lastRow = rowGroup[rowGroup.length-1];
     var r1;
     var r2;
-
     if (rIndex > cIndex) {
         r1 = $().add(firstRow).add($(firstRow).nextUntil(state.pastRowElected))
         r2 = $().add(lastRow).add($(lastRow).prevUntil(state.pastRowElected))
@@ -207,19 +208,6 @@ function findIfSelectionDirectionInverted (argsJson, currentRow) {
     }
 }
 
-function doesCurrentRowSelectionLieWithInPastElectedRow (argsJson, currentRow) {
-    var config = argsJson.config;
-    var state = argsJson.state;
-    var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
-    var pIndex = $(state.pastRowElected).index();
-    var cIndex = currentRow.index();
-    if (currentSelectionDirection === config.directions.top) {
-        return pIndex < cIndex
-    } else if (currentSelectionDirection === config.directions.bottom) {
-        return cIndex < pIndex;
-    }
-}
-
 function getRecentRowElectedUpToCurrentRow (argsJson, currentRow) {
     var config = argsJson.config;
     var state = argsJson.state;
@@ -231,17 +219,6 @@ function getRecentRowElectedUpToCurrentRow (argsJson, currentRow) {
         rows = rows.add(state.recentRowElected).add(currentRow.prevUntil(state.recentRowElected));
     }
     return rows;
-}
-
-function isCurrentRowBetweenRecentAndPastElectedRow (argsJson, currentRow) {
-    var state = argsJson.state;
-    var rIndex = $(state.recentRowElected).index();
-    var pIndex = $(state.pastRowElected).index();
-    var cIndex = currentRow.index();
-
-    if (state.recentRowElected && state.pastRowElected) {
-        return Math.min(rIndex, pIndex) >= cIndex >= Math.max(rIndex, pIndex);
-    }
 }
 
 function isTargetClickable (e, argsJson) {
@@ -282,6 +259,45 @@ function manageClick (e, argsJson, currentRow ) {
     } else {
         click(argsJson, currentRow);
     }
+}
+
+function determineShiftClickAction (argsJson, currentRow) {
+    var config = argsJson.config;
+    var state = argsJson.state;
+    var pIndex = $(state.pastRowElected).index();
+    var rIndex = $(state.recentRowElected).index();
+    var cIndex = currentRow.index();
+    var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
+    var isSelectionDirectionInverted = findIfSelectionDirectionInverted(argsJson, currentRow);
+    var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
+    var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
+    var isCurrentRowOutOfBounds = false;
+    var action;
+
+    if ((currentSelectionDirection === config.directions.bottom && pIndex > rIndex && pIndex < cIndex && rIndex < cIndex) ||
+        (currentSelectionDirection === config.directions.top && pIndex < rIndex && pIndex > cIndex && rIndex > cIndex)) {
+        isCurrentRowOutOfBounds = true;
+    }
+
+    if (isCurrentRowOutOfBounds &&
+        isSelectionDirectionInverted &&
+        isRecentModifierKeyShift) {
+        action = config.selectionType.toggle;
+    } else if ( currentSelectionDirection === config.directions.bottom) {
+        if (isRecentModifierKeyShift) {
+            action = ( pIndex <= rIndex && pIndex < cIndex ) ? config.selectionType.select : config.selectionType.deselect;
+        } else {
+            action = ( rIndex < cIndex ) ? config.selectionType.select : config.selectionType.deselect;
+        }
+    } else if ( currentSelectionDirection === config.directions.top) {
+        if (isRecentModifierKeyShift) {
+             action = ( pIndex >= rIndex && pIndex > cIndex ) ? config.selectionType.select : config.selectionType.deselect;
+        } else {
+            action = ( rIndex > cIndex ) ? config.selectionType.select : config.selectionType.deselect;
+        }
+    }
+    // console.log(action)
+    return action;
 }
 
 function click (argsJson, currentRow) {
@@ -329,13 +345,9 @@ function shiftClick (argsJson, currentRow) {
         rowsToSelect: $(),
         rowsToDeselect: $()
     };
-    var isSelectionDirectionInverted = findIfSelectionDirectionInverted(argsJson, currentRow);
-    var isCurrentRowBoundToRecentAndPastElectedRow = isCurrentRowBetweenRecentAndPastElectedRow(argsJson, currentRow);
-    var isCurrentRowBoundToPastElectedRow = doesCurrentRowSelectionLieWithInPastElectedRow(argsJson, currentRow)
+    var customState = {};
+    var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
-    var rowGroup;
-    var splitRowSet = {};
-    var isAllRowsInRowGroupSelected;
 
     if (currentRow.get(0) === state.recentRowElected) {
         return;
@@ -346,22 +358,25 @@ function shiftClick (argsJson, currentRow) {
     if (!(rowGroup && rowGroup.length)) {
         return;
     }
-    if (isSelectionDirectionInverted &&
-        !isCurrentRowBoundToRecentAndPastElectedRow &&
-        !isCurrentRowBoundToPastElectedRow &&
-        state.recentModifierKey === config.modifierKey.shift) {
+
+    var action = determineShiftClickAction(argsJson, currentRow);
+
+    if(action === config.selectionType.toggle) {
         splitRowSet = splitRowGroupByPastRowElected(argsJson, currentRow, rowGroup);
         newUi.rowsToSelect = splitRowSet.r1.filter(':not(".' + config.selectedRowClass + '")');
-        newUi.rowsToDeselect = splitRowSet.r2.filter('.' + config.selectedRowClass)
-    } else if (!isCurrentRowBoundToRecentAndPastElectedRow &&
-               !isCurrentRowBoundToPastElectedRow) {
-        newUi.rowsToSelect = rowGroup.filter(':not(".' + config.selectedRowClass + '")');
-    } else if (!isCurrentRowBoundToRecentAndPastElectedRow &&
-                isCurrentRowBoundToPastElectedRow ){
-        newUi.rowsToDeselect = getRecentRowElectedUpToCurrentRow(argsJson, currentRow);
+        newUi.rowsToDeselect = splitRowSet.r2.filter('.' + config.selectedRowClass);
+        customState.pastRowElected = state.pastRowElected;
+    } else {
+        if(action === config.selectionType.select) {
+            newUi.rowsToSelect = rowGroup.filter(':not(".' + config.selectedRowClass + '")');
+        } else if(action === config.selectionType.deselect) {
+            newUi.rowsToDeselect = getRecentRowElectedUpToCurrentRow(argsJson, currentRow);
+        }
+        if(isRecentModifierKeyShift  && !isCurrentRowThePastElectedRow) customState.pastRowElected = state.pastRowElected;
+        else if (isCurrentRowThePastElectedRow) customState.pastRowElected = currentRow.get(0);
     }
 
-    newState = computeState(argsJson, currentRow, config.modifierKey.shift);
+    newState = computeState(argsJson, currentRow, config.modifierKey.shift, customState);
     return update(argsJson, newState, newUi);
 
 }
