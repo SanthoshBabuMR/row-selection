@@ -111,11 +111,13 @@ var defaults = {
         selectableRow: 'data-ui-selectable-row',
         shiftSelectable: 'data-shift-selectable',
         ctrlSelectable: 'data-ctrl-selectable',
+        toggleOnShiftClick: 'data-toggle-on-shift-click',
         selectedRowClass: 'data-selected-class'
     },
     isDisabled: false,
     isShiftSelectable: true,
     isCtrlSelectable: true,
+    toggleOnShiftClick: false,
     selectedRowClass: 'ui-selectable-row-selected',
     containerHoverClass: 'ui-selectable-row-hover',
     disableTextSelectionClass : 'ui-selectable-row-disable-text-selection',
@@ -139,6 +141,7 @@ function dataAttributeBasedConfig (config, containerEl) {
     isDisabled: containerEl.attr(attr.disabled),
     isShiftSelectable: containerEl.attr(attr.shiftSelectable),
     isCtrlSelectable: containerEl.attr(attr.ctrlSelectable),
+    toggleOnShiftClick: containerEl.attr(attr.toggleOnShiftClick),
     selectedRowClass: containerEl.attr(attr.selectedRowClass)
   };
 }
@@ -162,6 +165,23 @@ function configure (option, containerEl) {
     var mashedConfig = __WEBPACK_IMPORTED_MODULE_0_jquery___default.a.extend( mashedConfig, dataAttributeBasedConfig(mashedConfig, containerEl))
     var mashedConfig = __WEBPACK_IMPORTED_MODULE_0_jquery___default.a.extend( mashedConfig, formatConfig(mashedConfig));
     return mashedConfig;
+}
+
+function computeState (argsJson, currentRow, modifierKey, customState) {
+    var config = argsJson.config;
+    var state = argsJson.state;
+    var newState = {};
+    var rIndex = __WEBPACK_IMPORTED_MODULE_0_jquery___default()(state.recentRowElected).index();
+    var cIndex = currentRow.index();
+    newState.recentRowElected = currentRow.get(0);
+    newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
+    newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
+    if (state.recentRowElected) {
+        newState.recentDirection = rIndex > cIndex ? config.directions.top : config.directions.bottom;
+        newState.pastDirection = state.recentDirection ? state.recentDirection : newState.recentDirection;
+    }
+    newState.recentModifierKey = modifierKey ? modifierKey : null;
+    return customState !== undefined ? __WEBPACK_IMPORTED_MODULE_0_jquery___default.a.extend(newState, customState) : newState;
 }
 
 function updateState (argsJson, newState) {
@@ -192,23 +212,6 @@ function update (argsJson, newState, newUi) {
                         [ __WEBPACK_IMPORTED_MODULE_0_jquery___default()(newUi.rowsToSelect), __WEBPACK_IMPORTED_MODULE_0_jquery___default()(newUi.rowsToDeselect), getSelectedRows(argsJson) ]);
 }
 
-function computeState (argsJson, currentRow, modifierKey, customState) {
-    var config = argsJson.config;
-    var state = argsJson.state;
-    var newState = {};
-    var rIndex = __WEBPACK_IMPORTED_MODULE_0_jquery___default()(state.recentRowElected).index();
-    var cIndex = currentRow.index();
-    newState.recentRowElected = currentRow.get(0);
-    newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
-    newState.pastRowElected = state.pastRowElected ? state.recentRowElected : currentRow.get(0);
-    if (state.recentRowElected) {
-        newState.recentDirection = rIndex > cIndex ? config.directions.top : config.directions.bottom;
-        newState.pastDirection = state.recentDirection ? state.recentDirection : newState.recentDirection;
-    }
-    newState.recentModifierKey = modifierKey ? modifierKey : null;
-    return customState !== undefined ? __WEBPACK_IMPORTED_MODULE_0_jquery___default.a.extend(newState, customState) : newState;
-}
-
 function filterSelection (argsJson, rows) {
     var config = argsJson.config;
     if (typeof config.filterSelection === 'function') {
@@ -234,12 +237,16 @@ function isRowSelected (argsJson, row) {
     }
 }
 
-function createRowGroup (argsJson, r1, r2) {
+function createRowGroup (argsJson, row1, row2) {
     var containerEl = argsJson.containerEl;
-    if (r1.index() > r2.index()) {
-        return r2.add(containerEl.find(r2).nextUntil(r1)).add(r1);
+    var row1Index = row1.index();
+    var row2Index = row2.index();
+    if (row1Index === row2Index || row1Index === -1 || row2Index === -1) {
+        return row1.length ? row1 : row2.length ? row2 : null;
+    } else if (row1.index() > row2.index()) {
+        return row2.add(containerEl.find(row2).nextUntil(row1)).add(row1);
     } else {
-        return r1.add(containerEl.find(r1).nextUntil(r2)).add(r2);
+        return row1.add(containerEl.find(row1).nextUntil(row2)).add(row2);
     }
 }
 
@@ -249,18 +256,18 @@ function splitRowGroupByPastRowElected (argsJson, currentRow, rowGroup) {
     var cIndex = currentRow.index();
     var firstRow = rowGroup[0];
     var lastRow = rowGroup[rowGroup.length-1];
-    var r1;
-    var r2;
+    var rowGroup1;
+    var rowGroup2;
     if (rIndex > cIndex) {
-        r1 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(firstRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(firstRow).nextUntil(state.pastRowElected))
-        r2 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(lastRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(lastRow).prevUntil(state.pastRowElected))
+        rowGroup1 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(firstRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(firstRow).nextUntil(state.pastRowElected))
+        rowGroup2 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(lastRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(lastRow).prevUntil(state.pastRowElected))
     } else {
-        r1 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(lastRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(lastRow).prevUntil(state.pastRowElected))
-        r2 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(firstRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(firstRow).nextUntil(state.pastRowElected))
+        rowGroup1 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(lastRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(lastRow).prevUntil(state.pastRowElected))
+        rowGroup2 = __WEBPACK_IMPORTED_MODULE_0_jquery___default()().add(firstRow).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(firstRow).nextUntil(state.pastRowElected))
     }
     return {
-        r1: r1,
-        r2: r2
+        group1: rowGroup1,
+        group2: rowGroup2
     }
 }
 
@@ -269,16 +276,10 @@ function getCurrentSelectionDirection (argsJson, currentRow) {
     var state = argsJson.state;
     var rIndex = __WEBPACK_IMPORTED_MODULE_0_jquery___default()(state.recentRowElected).index();
     var cIndex = currentRow.index();
-    if (state.recentRowElected) {
+    if (rIndex === cIndex) {
+        return null;
+    } else if (state.recentRowElected) {
         return rIndex > cIndex ? config.directions.top : config.directions.bottom;
-    }
-}
-
-function findIfSelectionDirectionInverted (argsJson, currentRow) {
-    var state = argsJson.state;
-    var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
-    if (typeof currentSelectionDirection === 'string' && typeof state.recentDirection === 'string') {
-        return currentSelectionDirection !== state.recentDirection
     }
 }
 
@@ -287,10 +288,18 @@ function getRecentRowElectedUpToCurrentRow (argsJson, currentRow) {
     var state = argsJson.state;
     var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
     var rows = __WEBPACK_IMPORTED_MODULE_0_jquery___default()();
-    if (currentSelectionDirection === config.directions.top) {
+    if (currentRow.get(0) === state.recentRowElected) {
+        rows = currentRow;
+    } else if (currentSelectionDirection === config.directions.top) {
         rows = rows.add(state.recentRowElected).add(__WEBPACK_IMPORTED_MODULE_0_jquery___default()(state.recentRowElected).prevUntil(currentRow.get(0)));
+        if (config.toggleOnShiftClick) {
+            rows = rows.add(currentRow.get(0))
+        }
     } else if (currentSelectionDirection === config.directions.bottom) {
         rows = rows.add(state.recentRowElected).add(currentRow.prevUntil(state.recentRowElected));
+        if (config.toggleOnShiftClick) {
+            rows = rows.add(currentRow.get(0))
+        }
     }
     return rows;
 }
@@ -322,9 +331,9 @@ function manageClick (e, argsJson, currentRow ) {
     }
 
     if (config.isShiftSelectable && modifierKey === config.modifierKey.shift) {
-        return shiftClick(argsJson, currentRow);
+        shiftClick(argsJson, currentRow);
     } else if (config.isCtrlSelectable && modifierKey === config.modifierKey.ctrl) {
-        return ctrlClick(argsJson, currentRow);
+        ctrlClick(argsJson, currentRow);
     } else {
         click(argsJson, currentRow);
     }
@@ -339,7 +348,6 @@ function determineShiftClickAction (argsJson, currentRow) {
     var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
     var towardsBottom = currentSelectionDirection === config.directions.bottom;
     var towardsTop = currentSelectionDirection === config.directions.top;
-    var isSelectionDirectionInverted = findIfSelectionDirectionInverted(argsJson, currentRow);
     var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
     var isCurrentRowOutOfBounds = false;
@@ -351,7 +359,6 @@ function determineShiftClickAction (argsJson, currentRow) {
     }
 
     if (isCurrentRowOutOfBounds &&
-        isSelectionDirectionInverted &&
         isRecentModifierKeyShift) {
         action = config.selectionType.toggle;
     } else if (towardsBottom) {
@@ -371,6 +378,8 @@ function determineShiftClickAction (argsJson, currentRow) {
     if (!action) {
         if (!isRowSelected(argsJson, currentRow)) {
             action = config.selectionType.select;
+        } else {
+            action = config.selectionType.deselect;
         }
     }
     // console.log(action);
@@ -393,7 +402,6 @@ function click (argsJson, currentRow) {
     }
 
     newState = computeState(argsJson, currentRow);
-    // console.log(newState);
     update(argsJson, newState, newUi);
 }
 
@@ -428,8 +436,9 @@ function shiftClick (argsJson, currentRow) {
     var splitRowSet;
     var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
+    var isCurrentRowTheRecentElectedRow = state.recentRowElected === currentRow.get(0);
 
-    if (currentRow.get(0) === state.recentRowElected) {
+    if (!config.toggleOnShiftClick && isCurrentRowTheRecentElectedRow) {
         return;
     }
 
@@ -443,8 +452,8 @@ function shiftClick (argsJson, currentRow) {
 
     if(action === config.selectionType.toggle) {
         splitRowSet = splitRowGroupByPastRowElected(argsJson, currentRow, rowGroup);
-        newUi.rowsToSelect = splitRowSet.r1.filter(':not(".' + config.selectedRowClass + '")');
-        newUi.rowsToDeselect = splitRowSet.r2.filter('.' + config.selectedRowClass);
+        newUi.rowsToSelect = splitRowSet.group1.filter(':not(".' + config.selectedRowClass + '")');
+        newUi.rowsToDeselect = splitRowSet.group2.filter('.' + config.selectedRowClass);
         customState.pastRowElected = state.pastRowElected;
     } else {
         if(action === config.selectionType.select) {
@@ -452,7 +461,7 @@ function shiftClick (argsJson, currentRow) {
         } else if(action === config.selectionType.deselect) {
             newUi.rowsToDeselect = getRecentRowElectedUpToCurrentRow(argsJson, currentRow);
         }
-        if(isRecentModifierKeyShift  && !isCurrentRowThePastElectedRow) customState.pastRowElected = state.pastRowElected;
+        if (isRecentModifierKeyShift  && !isCurrentRowThePastElectedRow) customState.pastRowElected = state.pastRowElected;
         else if (isCurrentRowThePastElectedRow) customState.pastRowElected = currentRow.get(0);
     }
 

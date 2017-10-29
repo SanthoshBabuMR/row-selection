@@ -54,8 +54,9 @@ $('.acts-table').uiSelectableRow({
 |Property|Type|Usage|Default|Required|
 |---|---|---|---|---|
 |rowIdentifier|string|CSS selector targeting the row. In case of table, it's usually 'tr', in case of list, it usually 'li'. This is element to which the 'selected' row class is attached to|```tbody tr```|yes|
-|selectRowIfTargetIs|array|Array of CSS selector, which if matches will select the row; selectRowIfTargetIs takes priority over selectRowIfTargetIsNot. Either 'selectRowIfTargetIs' or 'selectRowIfTargetIsNot' is required|```[]```|yes|
-|selectRowIfTargetIsNot|array|Array of CSS selector, which if matched will not select the row. Either 'selectRowIfTargetIs' or 'selectRowIfTargetIsNot' is required|```[]```|yes|
+|selectRowIfTargetIs|array|Array of CSS selector, which if matches will select the row; selectRowIfTargetIs takes priority over selectRowIfTargetIsNot.|```[]```|optional|
+|selectRowIfTargetIsNot|array|Array of CSS selector, which if matched will not select the row.|```[]```|optional|
+|toggleOnShiftClick|boolean|toggle selection on shift click|```false```|optional|
 |filterSelection|function|callback to filter selected rows||optional|
 |eventNs|string|event namespace|```uiSelectableRow```|optional|
 |eventType.toggleSelection|string|name for custom event type, 'toggleSelection'|```toggle-selection```|optional|
@@ -79,7 +80,6 @@ $('.acts-table').uiSelectableRow({
 |containerHoverClass|string|name of the hover class|```ui-selectable-row-hover```|optional|
 |disableTextSelectionClass|string|name of the text selection disable class|```ui-selectable-row-disable-text-selection```|optional|
 
-````
 ## Example(s)
 
 build example by running the following command and navigate to `http://localhost:8080/example/index.html`;
