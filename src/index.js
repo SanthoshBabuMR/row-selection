@@ -132,8 +132,8 @@ function computeState (argsJson, currentRow, modifierKey, customState) {
         newState.recentDirection = rIndex > cIndex ? config.directions.top : config.directions.bottom;
         newState.pastDirection = state.recentDirection ? state.recentDirection : newState.recentDirection;
     }
-    newState.recentModifierKey = modifierKey;
-    return customState ? $.extend(newState, customState) : newState;
+    newState.recentModifierKey = modifierKey ? modifierKey : null;
+    return customState !== undefined ? $.extend(newState, customState) : newState;
 }
 
 function filterSelection (argsJson, rows) {
@@ -240,7 +240,6 @@ function manageClick (e, argsJson, currentRow ) {
     if (config.isDisabled || !isTargetClickable(e, argsJson)) {
         return;
     }
-    var isMultiSelectable = config.isShiftSelectable || config.isCtrlSelectable;
     var modifierKey = e.shiftKey ? config.modifierKey.shift : (e.metaKey || e.ctrlKey ? config.modifierKey.ctrl : null);
 
     currentRow = filterSelection(argsJson, currentRow);
@@ -249,14 +248,10 @@ function manageClick (e, argsJson, currentRow ) {
         return;
     }
 
-    if (isMultiSelectable) {
-        if (modifierKey === config.modifierKey.shift) {
-            return shiftClick(argsJson, currentRow);
-        } else if (modifierKey === config.modifierKey.ctrl) {
-            return ctrlClick(argsJson, currentRow);
-        } else {
-            click(argsJson, currentRow);
-        }
+    if (config.isShiftSelectable && modifierKey === config.modifierKey.shift) {
+        return shiftClick(argsJson, currentRow);
+    } else if (config.isCtrlSelectable && modifierKey === config.modifierKey.ctrl) {
+        return ctrlClick(argsJson, currentRow);
     } else {
         click(argsJson, currentRow);
     }
@@ -269,14 +264,16 @@ function determineShiftClickAction (argsJson, currentRow) {
     var rIndex = $(state.recentRowElected).index();
     var cIndex = currentRow.index();
     var currentSelectionDirection = getCurrentSelectionDirection(argsJson, currentRow);
+    var towardsBottom = currentSelectionDirection === config.directions.bottom;
+    var towardsTop = currentSelectionDirection === config.directions.top;
     var isSelectionDirectionInverted = findIfSelectionDirectionInverted(argsJson, currentRow);
     var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
     var isCurrentRowOutOfBounds = false;
     var action;
 
-    if ((currentSelectionDirection === config.directions.bottom && pIndex > rIndex && pIndex < cIndex && rIndex < cIndex) ||
-        (currentSelectionDirection === config.directions.top && pIndex < rIndex && pIndex > cIndex && rIndex > cIndex)) {
+    if ((towardsBottom && pIndex > rIndex && pIndex < cIndex && rIndex < cIndex) ||
+        (towardsTop && pIndex < rIndex && pIndex > cIndex && rIndex > cIndex)) {
         isCurrentRowOutOfBounds = true;
     }
 
@@ -284,13 +281,13 @@ function determineShiftClickAction (argsJson, currentRow) {
         isSelectionDirectionInverted &&
         isRecentModifierKeyShift) {
         action = config.selectionType.toggle;
-    } else if ( currentSelectionDirection === config.directions.bottom) {
+    } else if (towardsBottom) {
         if (isRecentModifierKeyShift) {
             action = ( pIndex <= rIndex && pIndex < cIndex ) ? config.selectionType.select : config.selectionType.deselect;
         } else {
             action = ( rIndex < cIndex ) ? config.selectionType.select : config.selectionType.deselect;
         }
-    } else if ( currentSelectionDirection === config.directions.top) {
+    } else if (towardsTop) {
         if (isRecentModifierKeyShift) {
              action = ( pIndex >= rIndex && pIndex > cIndex ) ? config.selectionType.select : config.selectionType.deselect;
         } else {
@@ -303,7 +300,7 @@ function determineShiftClickAction (argsJson, currentRow) {
             action = config.selectionType.select;
         }
     }
-    // console.log(action)
+    // console.log(action);
     return action;
 }
 
@@ -323,6 +320,7 @@ function click (argsJson, currentRow) {
     }
 
     newState = computeState(argsJson, currentRow);
+    // console.log(newState);
     update(argsJson, newState, newUi);
 }
 
@@ -396,21 +394,25 @@ function handleEvents (argsJson) {
     var containerEl = argsJson.containerEl;
 
     $(document).on('keydown.' + config.eventNs, function(e) {
-        if (containerEl.hasClass(config.containerHoverClass) && e.shiftKey || e.ctrlKey || e.metaKey) {
+        if (!config.isDisabled &&  (containerEl.hasClass(config.containerHoverClass) && (e.shiftKey || e.ctrlKey || e.metaKey))) {
           containerEl.addClass(config.disableTextSelectionClass);
         }
     });
 
     $(document).on('keyup.' + config.eventNs, function(e) {
-        if (containerEl.hasClass(config.containerHoverClass)) {
+        if (!config.isDisabled && containerEl.hasClass(config.containerHoverClass)) {
             containerEl.removeClass(config.disableTextSelectionClass);
         }
     });
 
     containerEl.on('mouseenter.' + config.eventNs, function (e) {
-        containerEl.addClass(config.containerHoverClass);
+        if (!config.isDisabled) {
+            containerEl.addClass(config.containerHoverClass);
+        }
     }).on('mouseleave.' + config.eventNs, function (e) {
-        containerEl.removeClass(config.containerHoverClass);
+        if (!config.isDisabled) {
+            containerEl.removeClass(config.containerHoverClass);
+        }
     });
 
     containerEl.on('selectstart.' + config.eventNs, function (e) {
@@ -425,7 +427,7 @@ function handleEvents (argsJson) {
 
     containerEl.on(config.eventType.shiftSelectable + '.' + config.eventNs, function (e, shiftSelectable) {
         if (typeof shiftSelectable === 'boolean') {
-          state.isShiftSelectable = shiftSelectable
+          config.isShiftSelectable = shiftSelectable
         }
     });
 
@@ -438,11 +440,14 @@ function handleEvents (argsJson) {
     });
 
     containerEl.on(config.eventType.destroy + '.' + config.eventNs, function (e) {
-        containerEl.find(config.rowIdentifier).removeClass(config.selectedRowClass);
-        containerEl.off('.'+config.eventNs);
         $(document).off('.'+config.eventNs);
-        containerEl.attr(config.dataAttr.selectableRow, false);
-        containerEl.trigger(config.eventType.destroyed);
+        containerEl.removeClass(config.containerHoverClass + ' ' + config.disableTextSelectionClass)
+                    .off('.'+config.eventNs)
+                    .find(config.rowIdentifier)
+                    .removeClass(config.selectedRowClass);
+
+        containerEl.attr(config.dataAttr.selectableRow, false)
+                    .trigger(config.eventType.destroyed);
     });
 }
 
