@@ -2,7 +2,14 @@
   "name": "row-selection",
   "version": "3.0.1-beta",
   "description": "generic row selection plugin using click / ctrl-click / shift-click",
-  "url": "https://github.com/SanthoshBabuMR/row-selection.git",
+  "author": {
+    "name": "Santhosh Babu M R",
+    "url": "https://github.com/SanthoshBabuMR"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SanthoshBabuMR/row-selection.git",
+  },
   "main": "src/index.js",
   "scripts": {
     "start": "npm run clean && npm run build && npm run serve",
