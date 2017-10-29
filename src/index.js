@@ -296,6 +296,12 @@ function determineShiftClickAction (argsJson, currentRow) {
             action = ( rIndex > cIndex ) ? config.selectionType.select : config.selectionType.deselect;
         }
     }
+
+    if (!action) {
+        if (!isRowSelected(argsJson, currentRow)) {
+            action = config.selectionType.select;
+        }
+    }
     // console.log(action)
     return action;
 }
@@ -346,6 +352,8 @@ function shiftClick (argsJson, currentRow) {
         rowsToDeselect: $()
     };
     var customState = {};
+    var rowGroup;
+    var splitRowSet;
     var isRecentModifierKeyShift = state.recentModifierKey === config.modifierKey.shift;
     var isCurrentRowThePastElectedRow = state.pastRowElected === currentRow.get(0);
 
