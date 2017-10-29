@@ -1,6 +1,6 @@
 {
   "name": "row-selection",
-  "version": "3.0.1-beta",
+  "version": "3.0.2-beta",
   "description": "generic row selection plugin using click / ctrl-click / shift-click",
   "author": {
     "name": "Santhosh Babu M R",
