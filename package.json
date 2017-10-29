@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npm run clean && npm run build && npm run serve",
     "build": "webpack",
-    "build:dev": "webpack --watch",
+    "build:dev": "npm run clean && webpack --watch",
     "clean": "rimraf ./dist",
     "serve": "http-server ./"
   },
