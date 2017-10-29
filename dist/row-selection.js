@@ -108,6 +108,7 @@ var defaults = {
         selectRowIfTargetIs: 'data-select-row-if-target-is',
         selectRowIfTargetIsNot: 'data-select-row-if-target-is-not',
         disabled: 'data-disabled',
+        selectableRow: 'data-ui-selectable-row',
         shiftSelectable: 'data-shift-selectable',
         ctrlSelectable: 'data-ctrl-selectable',
         selectedRowClass: 'data-selected-class'
@@ -513,19 +514,19 @@ function handleEvents (argsJson) {
         containerEl.find(config.rowIdentifier).removeClass(config.selectedRowClass);
         containerEl.off('.'+config.eventNs);
         __WEBPACK_IMPORTED_MODULE_0_jquery___default()(document).off('.'+config.eventNs);
-        containerEl.attr('data-ui-selectable-row', false);
+        containerEl.attr(config.dataAttr.selectableRow, false);
         containerEl.trigger(config.eventType.destroyed);
     });
 }
 
 function init (config, state, containerEl) {
-    if (containerEl.attr('data-ui-selectable-row') !== 'true') {
+    if (containerEl.attr(config.dataAttr.selectableRow) !== 'true') {
         handleEvents({
             config: config,
             state: state,
             containerEl: containerEl
         });
-        containerEl.attr('data-ui-selectable-row', true);
+        containerEl.attr(config.dataAttr.selectableRow, true);
     }
 }
 
