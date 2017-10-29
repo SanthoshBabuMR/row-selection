@@ -1,6 +1,6 @@
 {
   "name": "row-selection",
-  "version": "3.0.0-beta",
+  "version": "3.0.1-beta",
   "description": "generic row selection plugin using click / ctrl-click / shift-click",
   "url": "https://github.com/SanthoshBabuMR/row-selection.git",
   "main": "src/index.js",
