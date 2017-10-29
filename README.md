@@ -36,7 +36,7 @@ $ npm install row-selection --save
 
 ```javascript
 'use strict';
-$('.acts-table').uiSelectableRow({
+$('.facts-table').uiSelectableRow({
   rowIdentifier: 'tr',
   selectRowIfTargetIs: 'td',
   selectedRowClass: 'fact-selected'
